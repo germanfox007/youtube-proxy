@@ -1,12 +1,10 @@
 exports.handler = async (event, context) => {
-  // Set CORS headers for your Shopify domain
   const headers = {
-    'Access-Control-Allow-Origin': '*', // Change to your domain in production
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
   };
 
-  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -15,7 +13,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  if (event.httpMethod !== 'POST') {
+  if (!['GET', 'POST'].includes(event.httpMethod)) {
     return {
       statusCode: 405,
       headers,
@@ -24,7 +22,26 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { query, type = 'search' } = JSON.parse(event.body);
+    let query, type;
+
+    // Handle both GET and POST requests
+    if (event.httpMethod === 'GET') {
+      query = event.queryStringParameters?.q;
+      type = event.queryStringParameters?.type || 'search';
+    } else {
+      const body = JSON.parse(event.body);
+      query = body.query;
+      type = body.type || 'search';
+    }
+
+    if (!query) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Query parameter is required' })
+      };
+    }
+
     const API_KEY = process.env.YOUTUBE_API_KEY;
 
     if (!API_KEY) {
