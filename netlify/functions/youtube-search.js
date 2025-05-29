@@ -36,16 +36,6 @@ exports.handler = async (event, context) => {
       service = body.service || 'youtube';
     }
     
-    // DEBUG: Log the received parameters
-    console.log('=== DEBUG INFO ===');
-    console.log('Service:', service);
-    console.log('Type:', type);
-    console.log('Query:', query);
-    console.log('YOUTUBE_DE_VIEW exists:', !!process.env.YOUTUBE_DE_VIEW);
-    console.log('YOUTUBE_DE_CHANNEL exists:', !!process.env.YOUTUBE_DE_CHANNEL);
-    console.log('YOUTUBE_DE_VIEW value:', process.env.YOUTUBE_DE_VIEW ? 'Set' : 'Not set');
-    console.log('YOUTUBE_DE_CHANNEL value:', process.env.YOUTUBE_DE_CHANNEL ? 'Set' : 'Not set');
-    
     if (!query) {
       return {
         statusCode: 400,
@@ -60,12 +50,9 @@ exports.handler = async (event, context) => {
         // Choose API key based on the type of request
         if (type === 'search' || type === 'channel-search') {
           API_KEY = process.env.YOUTUBE_DE_VIEW;
-          console.log('Using YOUTUBE_DE_VIEW for type:', type);
         } else if (type === 'channel' || type === 'video') {
           API_KEY = process.env.YOUTUBE_DE_CHANNEL;
-          console.log('Using YOUTUBE_DE_CHANNEL for type:', type);
         } else {
-          console.log('Invalid type parameter:', type);
           return {
             statusCode: 400,
             headers,
@@ -81,21 +68,12 @@ exports.handler = async (event, context) => {
         };
     }
     
-    console.log('Final API_KEY exists:', !!API_KEY);
-    console.log('==================');
-    
     if (!API_KEY) {
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
-          error: `API key not configured for ${service} ${type}`,
-          debug: {
-            service: service,
-            type: type,
-            hasYouTubeDeView: !!process.env.YOUTUBE_DE_VIEW,
-            hasYouTubeDeChannel: !!process.env.YOUTUBE_DE_CHANNEL
-          }
+          error: `API key not configured for ${service} ${type}`
         })
       };
     }
@@ -118,21 +96,16 @@ exports.handler = async (event, context) => {
       };
     }
     
-    console.log('Making API call to:', apiUrl.replace(API_KEY, '[API_KEY_HIDDEN]'));
-    
     const response = await fetch(apiUrl);
     const data = await response.json();
     
     if (!response.ok) {
-      console.log('YouTube API Error:', response.status, data);
       return {
         statusCode: response.status,
         headers,
         body: JSON.stringify({ error: 'YouTube API error', details: data })
       };
     }
-    
-    console.log('YouTube API Success - Items found:', data.items?.length || 0);
     
     return {
       statusCode: 200,
@@ -141,7 +114,6 @@ exports.handler = async (event, context) => {
     };
     
   } catch (error) {
-    console.error('Function error:', error);
     return {
       statusCode: 500,
       headers,
